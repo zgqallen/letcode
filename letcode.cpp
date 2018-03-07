@@ -28,7 +28,7 @@ using namespace std;
 
 /* 1. Two Sum */
 vector<int> twoSum(vector<int>& nums, int target) {
-{
+	vector<int> res;
     unordered_map<int, int> imap;
     
     for (int i = 0; i < nums.size(); ++i) {
@@ -36,7 +36,6 @@ vector<int> twoSum(vector<int>& nums, int target) {
         
         if (it != imap.end()) 
 		{
-			vector<int> res;
 			res.push_back(i);
 			res.push_back(it->second);
 			return res;
@@ -44,6 +43,324 @@ vector<int> twoSum(vector<int>& nums, int target) {
             
         imap[nums[i]] = i;
     }
+
+	return res;
+}
+
+/* 2. Add Two Numbers*/
+struct ListNode {
+	int val;
+	ListNode *next;
+	ListNode(int x) : val(x), next(NULL) {}
+};
+ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+        ListNode *p1, *p2, *cur = NULL, *pre = NULL, *ret = NULL;
+        int val = 0, inc = 0;
+        unsigned int sum = 0;
+        
+        p1 = l1;
+        p2 = l2;
+        
+        ret = pre = new ListNode(0);
+        while(true)
+        {          
+            if(p1 || p2 || inc)
+            {
+                val = ((p1 != NULL)?p1->val:0) + ((p2 != NULL)?p2->val:0) + inc;
+            }
+            else
+            {
+                break;
+            }
+            
+            inc = val/10;
+            val = val - inc*10;
+            
+            cur = new ListNode(val);
+
+            pre->next = cur;
+            pre = cur;
+            
+            if(p1 != NULL) p1 = p1->next;
+            if(p2 != NULL) p2 = p2->next;
+        }
+        
+        cur = ret;
+        ret = cur->next;
+        delete cur;
+        
+        return ret; 
+}
+
+/* 3. Longest Substring Without Repeating Characters */
+int lengthOfLongestSubstring(string s) {
+	int bit[256] = {-1}; 
+	int i, last = -1, longest = 0;
+
+	memset(bit, -1, sizeof(bit));
+	for(i = 0; i < s.size(); i++)
+    {
+		if(bit[s[i]] != -1) last = (last > bit[s[i]])?last:bit[s[i]];
+
+		bit[s[i]] = i;
+		longest = (i - last) > longest? (i - last):longest;
+	}
+
+	return longest;
+}
+
+/* 4. Median of Two Sorted Arrays*/
+double findMedianSortedArrays(vector<int>& nums1, vector<int>& nums2) {
+       int idx = 0, total, median, i = 0, j = 0, val1 = 0, val2 = 0;
+        
+        total = nums1.size() + nums2.size();
+        median = (total + 1)/2;
+        
+        i = nums1.size();
+        j = nums2.size();
+        
+        if(i == 0 || j == 0)
+        {
+            (i == 0)?val1 = nums2[j-1]:val1 = nums1[i-1];
+        }
+        
+        while(true)
+        {
+            if(i && j)
+            {
+                (nums1[i-1] >= nums2[j-1])? (val2 = val1, val1 = nums1[i-1], i--): (val2 = val1, val1 = nums2[j-1], j--);
+            }
+            else if(i)
+            {
+                val2 = val1;
+                val1 = nums1[i-1];
+                i--;
+            }
+            else
+            {
+                val2 = val1;
+                val1 = nums2[j-1];
+                j--;
+            }
+            
+            idx++;
+            if((idx == (median + 1)) || (idx >= total))  break;
+        }
+        
+        return (total % 2)?(val2*1.0):(((val1+val2)*1.0)/2);
+}
+
+/* 5. Longest Palindromic Substring */
+string longestPalindrome(string s) {
+		const int size = s.size();
+		int **dp = new int*[size];
+        int i, j, l = 0, r = 0, longest = -1;
+
+        for(i = 0; i < size; i++)
+			dp[i] = new int[size];
+
+		for(i = 0; i < size; i++)
+		{
+			for(j = 0; j <size; j++)
+				dp[i][j] = 0;
+		}
+
+        for(i = 0; i < size; i++)
+        {
+            for(j = 0; j <= i; j++)
+            {
+                dp[j][i] = ((s[j] == s[i]) && ((i - j) < 2 || dp[j+1][i-1]));
+                if(dp[j][i] && longest < (i - j + 1))
+                {
+                    longest = i - j + 1;
+                    l = j;
+                    r = i;
+                }
+            }
+        }
+        
+        return s.substr(l, r - l + 1);
+}
+
+/* 6. ZigZag Conversion */
+string convert(string s, int nRows) {
+    if (nRows <= 1)
+        return s;
+
+    const int len = (int)s.length();
+    string *str = new string[nRows];
+
+    int row = 0, step = 1;
+    for (int i = 0; i < len; ++i)
+    {
+        str[row].push_back(s[i]);
+
+        if (row == 0)
+            step = 1;
+        else if (row == nRows - 1)
+            step = -1;
+
+        row += step;
+    }
+
+    s.clear();
+    for (int j = 0; j < nRows; ++j)
+    {
+        s.append(str[j]);
+    }
+
+    delete[] str;
+    return s;
+}
+
+/* 7. Reverse Integer */
+int reverse(int x) {
+    long answer = 0;
+    while (x != 0) {
+       answer = answer * 10 + x % 10;
+       if (answer > INT_MAX || answer < INT_MIN) return 0;
+       x /= 10;
+	}
+    
+    return (int)answer;
+}
+
+/* 8. String to Integer (atoi) */
+int myAtoi(string str) {
+        long result = 0;
+        int indicator = 1;
+        for(int i = 0; i<str.size();)
+        {
+            i = str.find_first_not_of(' ');
+            if(str[i] == '-' || str[i] == '+')
+                indicator = (str[i++] == '-')? -1 : 1;
+            
+            while('0'<= str[i] && str[i] <= '9') 
+            {
+                result = result*10 + (str[i++]-'0');
+                if(result*indicator >= INT_MAX) return INT_MAX;
+                if(result*indicator <= INT_MIN) return INT_MIN;                
+            }
+            
+            return result*indicator;
+        }
+        
+        return result;
+}
+
+/* 9. Palindrome Number */
+bool isPalindrome(int x) {
+        if(x < 0) return false;
+        if(x < 10) return true;
+        if(x % 10 == 0) return false;
+        
+        int rev = 0;
+        
+        while(rev < x)
+        {
+            rev = rev*10 + x%10;
+            x = x/10;
+        }
+
+        return (rev == x || rev/10 == x);
+}
+
+/* 11. Container With Most Water */
+int maxArea(vector<int>& height) {
+        int maxarea = 0, i = 0, j = height.size() - 1;
+        
+        while(i < j)
+        {
+            int h = min(height[i], height[j]);
+            maxarea = max(maxarea, h * (j - i));
+            while(height[i] <= h && i < j) i++;
+            while(height[j] <= h && i < j) j--;
+        }
+        
+        return maxarea;
+}
+
+/* 14. Longest Common Prefix*/
+class TrieNode{
+public:
+	int count;
+	char word;
+	vector<TrieNode> child;
+	TrieNode():word('@'), count(0) { }
+};
+
+class Trie
+{
+public:
+	TrieNode *root;
+    unsigned int obj_c;
+
+public:
+	Trie():obj_c(0) { root = new TrieNode(); }
+	~Trie() {delete root;}
+
+    void InsertTrie(const string word)
+    {
+        TrieNode* pLoc = root;
+        obj_c++;
+        
+	    for(int i = 0; i < word.size(); i++)
+	    {
+		    bool exist = false;
+
+		    for(unsigned int j = 0; j < pLoc->child.size(); j++)
+		    {
+			    if(pLoc->child[j].word == word[i])
+			    {
+				    pLoc->child[j].count++;
+				    pLoc = &(pLoc->child[j]);
+				    exist = true;
+				    break;
+			    }
+		    }
+
+		    if(!exist)
+		    {
+			    TrieNode temp;
+			    temp.word = word[i];
+			    temp.count++;
+			    pLoc->child.push_back(temp);
+			    pLoc = &pLoc->child.back();
+		    }
+	    }
+    }
+    
+    string LongestCommon()
+    {
+	    string common = "";
+
+	    if(root->child.size() == 1)
+	    {
+		    TrieNode *pLoc = &root->child[0];
+		    while(pLoc != NULL)
+		    {
+                if(pLoc->count != this->obj_c)
+				    break;
+			    common.append(&pLoc->word, 1);
+			    if(pLoc->child.size() != 1)
+				    break;
+			    pLoc = &pLoc->child[0];
+		    }
+	    }
+
+	    return common;
+    }
+};
+
+string longestCommonPrefix(vector<string>& strs) {
+        Trie T;
+        
+        for(unsigned int i = 0; i < strs.size(); i++)
+        {
+            T.InsertTrie(strs[i]);
+        }
+        
+        return T.LongestCommon();
 }
 
 /* 15. 3Sum */
