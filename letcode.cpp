@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <queue>
 #include <cstdint>
 #include <type_traits>
 #include <stdio.h>
@@ -29,20 +30,20 @@ using namespace std;
 /* 1. Two Sum */
 vector<int> twoSum(vector<int>& nums, int target) {
 	vector<int> res;
-    unordered_map<int, int> imap;
+	unordered_map<int, int> imap;
     
-    for (int i = 0; i < nums.size(); ++i) {
+	for (int i = 0; i < nums.size(); ++i) {
         auto it = imap.find(target - nums[i]);
         
-        if (it != imap.end()) 
+		if (it != imap.end()) 
 		{
 			res.push_back(i);
 			res.push_back(it->second);
 			return res;
 		}
             
-        imap[nums[i]] = i;
-    }
+		imap[nums[i]] = i;
+	}
 
 	return res;
 }
@@ -445,14 +446,139 @@ int threeSumClosest(vector<int>& nums, int target)
 	return res;
 }
 
+/* 378. Kth Smallest Element in a Sorted Matrix */
+class KTOP_MAXHEAP
+{
+private:
+	int _size;
+	int max_size;
+	priority_queue<int> pq;
+
+public:
+	KTOP_MAXHEAP(int K):_size(0) {max_size = K;}
+	void show_queue();
+	void push_queue(int v);
+	int top() {return pq.top();}
+};
+
+void KTOP_MAXHEAP::show_queue()
+{
+	while(!pq.empty())
+	{
+		cout<<pq.top()<<" ";
+		pq.pop();
+	}
+	cout<<endl;
+}
+
+void KTOP_MAXHEAP::push_queue(int v)
+{
+	if(pq.size() < max_size){
+		pq.push(v);
+	}else{
+		if(v < pq.top())
+		{
+			pq.pop();
+			pq.push(v);
+		}
+	}
+}
+
+int kthSmallest(vector<vector<int>>& matrix, int k) {
+	KTOP_MAXHEAP k_max(k);
+	int i,j,v = 0;
+	for(i = 0 ; i < matrix.size(); i++)
+	{
+		for(j = 0; j < matrix[i].size(); j++)
+		{
+			k_max.push_queue(matrix[i][j]);
+		}
+	}
+	v = k_max.top();
+	cout << "Min " << k << "th value is: " << v << endl;
+	k_max.show_queue();
+	return v;
+/* another simple using priority_queue
+        priority_queue<int> q;
+        for (int i = 0; i < matrix.size(); ++i) {
+            for (int j = 0; j < matrix[i].size(); ++j) {
+                q.emplace(matrix[i][j]);
+                if (q.size() > k) q.pop();
+            }
+        }
+        return q.top();
+*/
+}
+
+/* 821. Shortest Distance to a Character */
+void updateDist(vector<int> &dist, int le, int re, int side)
+{
+	if(side == 1){
+		for(int i = 0; i < re; i++)
+		{
+			dist[i] = re - le - i;
+		}
+	}
+	else if(side == 2){
+		for(int i = le; i <= re; i++)
+		{
+			dist[i-1] = (re -le) - (re - i); 
+		}
+	}
+	else{
+		for(int i = le; i <= re; i++)
+		{
+			dist[i-1] = min(i - le, re - i);
+		}
+	}
+}
+vector<int> shortestToChar(string S, char C) {
+	vector<int> e_idxs;
+	vector<int> dist;
+	int i;
+
+	for(i = 0; i < S.length(); i++)
+	{
+		dist.push_back(0);
+		if(S[i] == C) e_idxs.push_back(i+1);
+	}
+
+	if(e_idxs[0] != 1) updateDist(dist, 1, e_idxs[0], 1);
+	if(e_idxs[e_idxs.size()-1] != dist.size()) updateDist(dist, e_idxs[e_idxs.size()-1], dist.size(), 2);
+
+	for(i = 0; i < (e_idxs.size()-1); i++)
+	{
+		updateDist(dist, e_idxs[i], e_idxs[i+1], 0);
+	}
+
+	return dist;
+}
+
+/* 822. Card Flipping Game */
+int flipgame(vector<int>& fronts, vector<int>& backs) {
+	int small_good = 2001, back = 0;
+	for(int i = 0; i < fronts.size(); i++)
+	{
+		int j;
+		if(fronts[i] == backs[i]) continue;
+		for(j = 0; j < fronts.size(); j++)
+		{
+			if(j == i) continue;
+			if(fronts[j] == fronts[i]) break;
+		}
+		if(j == fronts.size() && (fronts[i] < small_good)) small_good = fronts[i];
+	}
+	return (small_good < 2001)?small_good:0;
+}
 
 int main(int argc, char* argv[])
 {
+	int arry[] =  {1,2,4,4,7};
+	int arryb[] = {1,3,4,1,3};
 
-	int arry[] = {0,0,0,0};
-	vector<int> in(arry, arry+4);
-	threeSum(in);
-
+	vector<int> fronts(arry, arry+5);
+	vector<int> backs(arryb, arryb+5);
+	printf("result %d\n", flipgame(fronts, backs));
 	system("pause");
 
 	return 0;
