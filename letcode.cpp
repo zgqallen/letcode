@@ -571,14 +571,87 @@ int flipgame(vector<int>& fronts, vector<int>& backs) {
 	return (small_good < 2001)?small_good:0;
 }
 
+/* 830. Positions of Large Groups */
+    int recurse(string &S, int s_idx)
+    {
+        if(s_idx == (S.length()-1))
+            return s_idx; 
+            
+        if(S[s_idx+1] == S[s_idx])
+            return recurse(S, s_idx+1);
+        else
+            return s_idx;
+    }
+    
+    vector<vector<int>> largeGroupPositions(string S) {
+        vector<vector<int>> result;
+        
+		if(S.length() > 3)
+		{
+			for(int s_idx = 0; s_idx < S.length();)
+			{
+				int e_idx = recurse(S, s_idx);
+				if((e_idx - s_idx) >= 2)
+				{
+					vector<int> V;
+					V.push_back(s_idx);
+					V.push_back(e_idx);
+					result.push_back(V);
+				}
+				s_idx = e_idx + 1;
+			}
+		}
+   
+        return result;
+}
+
+/* 845. Longest Mountain in Array */
+int longestMountain(vector<int>& A) {
+	int ret = 0;
+
+	if(A.size() < 3) return ret;
+	for(int i = 1; i < (A.size()-1); i++)
+	{
+		int li, ri, loop = 1;
+
+		if(A[i] > A[i-1] && A[i] > A[i+1])
+		{
+			li = i; ri = i;
+		}
+		else
+		{
+			continue;
+		}
+
+		while(loop)
+		{
+			loop = 0;
+			if(li > 0 && A[li] > A[li-1])
+			{
+				li--; loop += 1;
+			}
+			if(ri < (A.size()-1) && A[ri] > A[ri+1])
+			{
+				ri++; loop += 1;
+			}
+		}
+
+		if(ret < (ri - li + 1) && (ri - li + 1) >= 3) ret = ri - li + 1;
+	}
+
+	return ret;
+}
+
+
 int main(int argc, char* argv[])
 {
-	int arry[] =  {1,2,4,4,7};
+	int arry[] =  {2,1,4,7,3,4,5};
 	int arryb[] = {1,3,4,1,3};
 
-	vector<int> fronts(arry, arry+5);
-	vector<int> backs(arryb, arryb+5);
-	printf("result %d\n", flipgame(fronts, backs));
+	vector<int> fronts(arry, arry+7);
+
+	//vector<int> backs(arryb, arryb+5);
+	printf("result %d\n", longestMountain(fronts));
 	system("pause");
 
 	return 0;
