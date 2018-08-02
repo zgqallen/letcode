@@ -6,6 +6,8 @@
 #include <vector>
 #include <unordered_map>
 #include <queue>
+#include <set>
+#include <map>
 #include <cstdint>
 #include <type_traits>
 #include <stdio.h>
@@ -15,6 +17,7 @@
 #include <direct.h>
 #include <iomanip>
 #include <cmath>
+#include <string>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -642,16 +645,166 @@ int longestMountain(vector<int>& A) {
 	return ret;
 }
 
+/* 139. Word Break */
+bool wordBreak(string s, vector<string>& wordDict) {
+	int min_word = INT_MAX;
+	set<string> DictSet;
+
+	for(vector<string>::iterator word = wordDict.begin(); word != wordDict.end(); ++word)
+	{
+		DictSet.insert(*word);
+		min_word = min(min_word, (int)(*word).size());
+	}
+
+	if(s.size() < min_word)
+		return false;
+
+	vector<bool> Break(s.size(), false);
+	for(int i = min_word-1; i < s.size(); i++)
+	{
+		for( int j = i - 1; j >= -1; j--)
+		{
+			if(j == -1 || Break[j])
+			{
+				if(DictSet.find(s.substr(j+1, i-j)) != DictSet.end())
+				{
+					Break[i] = true;
+					break;
+				}
+			}
+		}
+	}
+
+	return Break[s.size()-1];
+}
+
+/* 647. Palindromic Substrings */
+bool isPalindromic(string s)
+{
+	int li, ri;
+	/* cout << s << endl; */
+	if(s.size() == 1) return true;
+	li = 0;
+	ri = s.size() - 1;
+	while(li <= ri)
+	{
+		if(s[li] == s[ri])
+		{
+			li++;ri--;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+int countSubstrings(string s) {
+        int li, i, j, count = 0;
+		/* the substr word count */
+		for(i = 1; i <= s.size(); i++)
+		{
+			for(li = 0; li <= s.size() - i; li++)
+			{
+				if(isPalindromic(s.substr(li, i))) count++;
+			}
+		}
+
+	return count;
+}
+
+/* 617. Merge Two Binary Trees */
+
+struct TreeNode {
+	int val;
+	TreeNode *left;
+	TreeNode *right;
+	TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+};
+
+TreeNode* mergeTrees(TreeNode* t1, TreeNode* t2) {
+	if(!t1 && !t2) return nullptr;
+	if(!t1) return t2;
+	else if(!t2) return t1;
+	else
+	{
+		TreeNode *newnode = new TreeNode(t1->val + t2->val);
+		newnode->left = mergeTrees(t1->left, t2->left);
+		newnode->right = mergeTrees(t1->right, t2->right);
+		return newnode;
+	}
+}
+
+/* 581. Shortest Unsorted Continuous Subarray */
+int findUnsortedSubarray(vector<int>& nums) {
+        int start = -1, end = -1,  max = INT_MIN;
+        for(int i=0; i<nums.size();i++){
+            if(max>nums[i]){
+                if(start == -1)start = i-1;
+                while(start-1>=0 && nums[start-1]>nums[i])start--;
+                end = i+1;
+            }
+            else max = nums[i];
+        }
+        return end - start;   
+}
+
+/* 146. LRU Cache */
+class LRUCache {
+public:
+    LRUCache(int capacity) {
+        max_size = capacity;
+    }
+    
+    int get(int key) {
+		int value = -1;
+		if(LRUMap.find(key) != LRUMap.end())
+		{
+			value = LRUMap[key]->second;
+			LRUList.erase(LRUMap[key]);
+			LRUList.push_front(make_pair(key,value));
+			LRUMap[key] = LRUList.begin();
+		}
+
+        return value;
+    }
+    
+    void put(int key, int value) {
+        if(LRUMap.find(key) != LRUMap.end())
+		{
+			LRUList.erase(LRUMap[key]);
+		}
+		else if(LRUMap.size() == max_size)
+		{
+			LRUMap.erase(LRUList.back().first);
+			LRUList.pop_back();
+		}
+
+		LRUList.push_front(make_pair(key,value));
+		LRUMap[key] = LRUList.begin();
+    }
+private:
+	size_t max_size;
+	list<pair<int, int>> LRUList;
+	unordered_map<int, list<pair<int,int>>::iterator> LRUMap;
+};
 
 int main(int argc, char* argv[])
 {
-	int arry[] =  {2,1,4,7,3,4,5};
-	int arryb[] = {1,3,4,1,3};
+	/*
+	string s = "catsandog";
+	vector<string> wordDict;
+	wordDict.push_back("cats");
+	wordDict.push_back("dog");
+	wordDict.push_back("sand");
+	wordDict.push_back("san");
+	wordDict.push_back("cat");
+	*/
+	int arry[] = {1, 8, 7, 5, 6, 10};
+	vector<int> nums(arry, arry+6);
+	printf("result: %d\n",findUnsortedSubarray(nums));
 
-	vector<int> fronts(arry, arry+7);
-
-	//vector<int> backs(arryb, arryb+5);
-	printf("result %d\n", longestMountain(fronts));
 	system("pause");
 
 	return 0;
