@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <queue>
 #include <set>
+#include <unordered_set>
 #include <map>
 #include <cstdint>
 #include <type_traits>
@@ -660,7 +661,7 @@ bool wordBreak(string s, vector<string>& wordDict) {
 		return false;
 
 	vector<bool> Break(s.size(), false);
-	for(int i = min_word-1; i < s.size(); i++)
+	for(int i = min_word-1; i < s.size(); i+=min_word)
 	{
 		for( int j = i - 1; j >= -1; j--)
 		{
@@ -790,21 +791,210 @@ private:
 	unordered_map<int, list<pair<int,int>>::iterator> LRUMap;
 };
 
+/* 44. Wildcard Matching */
+bool isMatch(string s, string p) {
+	int ps = p.size();
+	int ss = s.size();
+	/* DB solution to record matching result of s[i] to p[j]*/
+	vector<vector<bool>> dp(ss+1, vector<bool>(ps+1, false));
+	dp[0][0] = true;
+
+	/* scan from p to match s */
+	for(int j = 1; j <= ps; j++)
+	{
+		if(p[j-1] == '*')
+		{
+			int i = 0;
+			/* any substr if s[0->i] could match p[0->j-1], then p[i][j->end] match */
+			while(i <= ss)
+			{
+				if(dp[i][j-1]) break;
+				i++;
+			}
+
+			while(i <= ss) dp[i++][j] = true;
+		}
+		else if(p[j-1] == '?')
+		{
+			for(int i = 1; i <= ss; i++)
+			{
+				if(dp[i-1][j-1]) dp[i][j] = true;
+			}
+		}
+		else
+		{
+			for(int i = 1; i <= ss; i++)
+			{
+				if((p[j-1] == s[i-1]) && dp[i-1][j-1]) dp[i][j] = 1;
+			}
+		}
+	}
+
+   for (int i=0; i<=ss; i++){
+        for (int j=0; j<=ps; j++)
+            cout<<dp[i][j]<<" ";
+        cout<<endl;
+    }
+	return dp[ss][ps];
+}
+
+/* 10. Regular Expression Matching */
+bool isMatch2(string s, string p) {
+	int ss = s.size();
+	int ps = p.size();
+
+	/* DB solution to record matching result of s[i] to p[j]*/
+	vector<vector<bool>> dp(ss+1, vector<bool>(ps+1, false));
+	dp[0][0] = true;
+
+	/* s could be empty, so start from index 0. */
+	for(int i = 0; i <= ss; i++)
+	{
+		for(int j = 1; j <= ps;j++)
+		{
+			if(p[j-1] == '*')
+			{
+				/* star can repeat zero or repeat many times in case p[j-2] == s[i-1]||p[j-2] == '.' */
+				dp[i][j] = dp[i][j-2] || ((i >=1) && (p[j-2] == s[i-1]||p[j-2] == '.') && dp[i-1][j]);
+			}
+			else
+			{
+				dp[i][j] = (i >=1) && (p[j-1] == s[i-1]||p[j-1] == '.') && dp[i-1][j-1];
+			}
+		}
+	}
+
+	for (int i=0; i<=ss; i++){
+        for (int j=0; j<=ps; j++)
+            cout<<dp[i][j]<<" ";
+        cout<<endl;
+    }
+	return dp[ss][ps];
+}
+
+/* 140. Word Break II */
+vector<string> result;
+void WBS(vector<vector<int>> &dp, int s_idx, string s, vector<string> &res)
+{
+	for(int i = 0; i < dp[s_idx].size(); i++)
+	{
+		int e_idx = dp[s_idx][i];
+		res.push_back(s.substr(s_idx, e_idx-s_idx));
+
+		if(e_idx == s.size())// we get a solution
+		{
+			string p;
+			for(int k = 0; k < (res.size()-1); k++)
+			{
+				p.append(res[k]);
+				p.append(" ");
+			}
+			p.append(res[res.size()-1]);
+			result.push_back(p);
+			res.pop_back();
+			return;
+		}
+
+		WBS(dp, e_idx, s, res);
+		res.pop_back();
+	}
+}
+
+vector<string> wordBreak2(string s, vector<string>& wordDict) {
+	int size;
+	unordered_set<string> Dict;
+	vector<vector<int>> dp(s.size());
+	vector<string> res;
+	int min_size = INT_MAX, max_size = INT_MIN;
+
+	for(vector<string>::iterator iter = wordDict.begin(); iter != wordDict.end(); iter++)
+	{
+		int size = (*iter).size();
+		Dict.insert(*iter);
+		min_size = min(min_size, size);
+		max_size = max(max_size, size);
+	}
+	
+	vector<bool> canbreak(s.size(), false);
+	for(int i = min_size-1; i < s.size(); i++)
+	{
+		for(int j = i; j >= -1; j--)
+		{
+			if(j == -1 || canbreak[j])
+			{
+				if(Dict.find(s.substr(j+1, i-j)) != Dict.end())
+				{
+					canbreak[i] = true;
+					if( j == -1) dp[0].push_back(i+1);
+					else		 dp[j+1].push_back(i+1);
+				}
+			}
+
+			if((i-j+1) > max_size) break;
+		}
+	}
+
+	if(canbreak[s.size()-1])
+	{
+		vector<string> res;
+		WBS(dp, 0, s, res);
+	}
+
+	return result;
+}
+
+/* 454. 4Sum II */
+int fourSumCount(vector<int>& A, vector<int>& B, vector<int>& C, vector<int>& D) {
+	vector<int> sumAB;
+	vector<int> sumCD;
+	int i, j, res = 0, rangi, rangj;
+    if(A.size() == 0) return res;
+
+	for(i = 0; i < A.size(); i++)
+		for(j = 0; j < B.size(); j++)
+			sumAB.push_back(A[i]+B[j]);
+    sort(sumAB.begin(), sumAB.end());
+    rangi = -1*sumAB.back();
+    rangj = -1*sumAB.front();
+
+	for(i = 0; i < C.size(); i++)
+		for(j = 0; j < D.size(); j++)
+    {
+            int res = C[i]+D[j];
+			if(res >= rangi && res <= rangj) sumCD.push_back(res);
+    }
+    sort(sumCD.begin(), sumCD.end());
+    
+    for(i = 0; i < sumAB.size(); i++)
+	{
+        int delp, target;
+		target =  (-1)*sumAB[i];
+		delp = sumCD.size();
+		for(j = (delp-1); j >=0; j--)
+		{
+			if(sumCD[j] > target) delp--;
+			if(sumCD[j] == target) res++;
+			if(sumCD[j] < target) break;
+		}
+		sumCD.erase(sumCD.begin()+delp, sumCD.end()); 
+	}
+	return res;
+}
+
 int main(int argc, char* argv[])
 {
-	/*
-	string s = "catsandog";
-	vector<string> wordDict;
-	wordDict.push_back("cats");
-	wordDict.push_back("dog");
-	wordDict.push_back("sand");
-	wordDict.push_back("san");
-	wordDict.push_back("cat");
-	*/
-	int arry[] = {1, 8, 7, 5, 6, 10};
-	vector<int> nums(arry, arry+6);
-	printf("result: %d\n",findUnsortedSubarray(nums));
+	int A[] = {-268435121,-268434818,-268435384,-268434504,-268434852,-268434847,-268434718,-268434830,-268434644,-268434843,-268435282,-268434756,-268435098,-268435361,-268434888,-268435198,-268434771,-268435001,-268435011,-268434745,-268434892,-268435442,-268434705,-268434932,-268435095,-268434829,-268435166,-268434672,-268434959,-268434886,-268435158,-268435439,-268434665,-268434561,-268435327,-268434478,-268434879,-268434902,-268435027,-268434922,-268435028,-268434950,-268435407,-268434916,-268435326,-268435048,-268435156,-268435043,-268434607,-268434738,-268434944,-268434813,-268435194,-268434793,-268435372,-268434483,-268434761,-268434571,-268434529,-268435314,-268434733,-268435218,-268434590,-268434520,-268435372,-268435180,-268435420,-268435360,-268435316,-268435455,-268434797,-268435008,-268434540,-268434816,-268434485,-268435238,-268434559,-268434589,-268435257,-268434877,-268435455,-268435128,-268435307,-268434919,-268434893,-268435239,-268434788,-268435176,-268434930,-268434582,-268434471,-268435206,-268434561,-268434880,-268435137,-268434504,-268434549,-268434825,-268434587,-268435293};
+	int B[] = {-268434497,-268435316,-268435433,-268434992,-268435391,-268434629,-268434902,-268434629,-268434895,-268434527,-268434822,-268435325,-268434634,-268434877,-268434758,-268434758,-268435109,-268435179,-268434736,-268435111,-268435243,-268435191,-268435091,-268435041,-268435231,-268434473,-268434656,-268435379,-268435127,-268434727,-268435302,-268434643,-268435101,-268434879,-268434848,-268434880,-268434817,-268434746,-268435005,-268435018,-268434535,-268435390,-268435430,-268434486,-268434497,-268434652,-268434816,-268435055,-268435296,-268435044,-268434939,-268435267,-268435283,-268434673,-268435298,-268435069,-268435041,-268434525,-268435023,-268435064,-268434969,-268434630,-268435197,-268435049,-268434496,-268434777,-268434928,-268434683,-268434923,-268434699,-268434634,-268434613,-268435438,-268435449,-268434498,-268435183,-268434577,-268434515,-268435100,-268435023,-268435214,-268435358,-268435394,-268434734,-268434636,-268435056,-268434829,-268434962,-268434673,-268434578,-268434850,-268435294,-268434752,-268435410,-268434841,-268434952,-268435111,-268434905,-268434791,-268434507};
+	int C[] = {268434624,268434831,268435028,268434547,268435027,268435453,268435101,268435378,268435107,268434991,268435147,268435379,268435435,268435439,268435003,268435440,268435454,268434786,268434521,268434678,268435125,268434685,268434482,268435042,268434486,268434521,268435003,268435086,268434786,268434762,268435384,268434577,268435199,268435020,268434709,268435006,268434820,268434830,268435208,268435448,268435274,268435438,268435082,268435140,268434465,268435324,268434645,268435032,268434567,268435057,268435161,268435246,268434515,268434880,268435432,268434905,268435135,268435436,268434923,268435110,268434607,268435286,268435281,268434717,268435367,268434894,268435280,268434880,268435181,268434971,268435316,268435021,268435208,268434589,268434811,268434774,268434843,268434762,268434650,268435068,268434731,268435192,268434596,268434549,268434535,268435372,268435361,268435224,268435033,268434807,268435003,268434647,268435051,268434464,268435326,268434991,268434571,268435192,268435435,268435181};
+	int D[] = {268434917,268435022,268435311,268434898,268435389,268435347,268434735,268435285,268434695,268434794,268435393,268435114,268435063,268434517,268434464,268434766,268435316,268434706,268434962,268435078,268434921,268435070,268434569,268434895,268435446,268435003,268435362,268435421,268435158,268435274,268435391,268435298,268435311,268435295,268435428,268435010,268434884,268435055,268434824,268434877,268434467,268435181,268434797,268435142,268434611,268434719,268435081,268434924,268435340,268434961,268435215,268434583,268435192,268435364,268434925,268435396,268434599,268435330,268435253,268435037,268434642,268435228,268435103,268434736,268435123,268435220,268435394,268435015,268434906,268434478,268434956,268434465,268434840,268434648,268434706,268435382,268435297,268434602,268435264,268435237,268434582,268434686,268434825,268435246,268435234,268435441,268435139,268435357,268434512,268435375,268434873,268435318,268434469,268434750,268435217,268434469,268434872,268435218,268435254,268434547};
+	int size = sizeof(A)/sizeof(int);
+	vector<int> A1(A, A+size);
+	vector<int> B1(B, B+size);
+	vector<int> C1(C, C+size);
+	vector<int> D1(D, D+size);
+	fourSumCount(A1, B1, C1, D1);
 
+    //printf("result: %d\n",isMatch2("aasdfasdfasdfasdfas", "aasdf.*asdf.*asdf.*asdf.*s"));
 	system("pause");
 
 	return 0;
