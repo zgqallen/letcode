@@ -9,6 +9,7 @@
 #include <set>
 #include <unordered_set>
 #include <map>
+#include <stack>
 #include <cstdint>
 #include <type_traits>
 #include <stdio.h>
@@ -25,9 +26,6 @@
 #include <fcntl.h>
 #include <io.h>
 #include <algorithm>
-#include <sys/timeb.h>
-#include <sys/types.h>        /*  socket types              */
-#pragma comment (lib, "Ws2_32.lib")
 
 using namespace std;
 
@@ -286,8 +284,7 @@ int maxArea(vector<int>& height) {
 }
 
 /* 14. Longest Common Prefix*/
-class TrieNode{
-public:
+struct TrieNode{
 	int count;
 	char word;
 	vector<TrieNode> child;
@@ -702,7 +699,7 @@ bool isPalindromic(string s)
 }
 
 int countSubstrings(string s) {
-        int li, i, j, count = 0;
+        int li, i, count = 0;
 		/* the substr word count */
 		for(i = 1; i <= s.size(); i++)
 		{
@@ -901,7 +898,6 @@ void WBS(vector<vector<int>> &dp, int s_idx, string s, vector<string> &res)
 }
 
 vector<string> wordBreak2(string s, vector<string>& wordDict) {
-	int size;
 	unordered_set<string> Dict;
 	vector<vector<int>> dp(s.size());
 	vector<string> res;
@@ -945,54 +941,640 @@ vector<string> wordBreak2(string s, vector<string>& wordDict) {
 
 /* 454. 4Sum II */
 int fourSumCount(vector<int>& A, vector<int>& B, vector<int>& C, vector<int>& D) {
-	vector<int> sumAB;
-	vector<int> sumCD;
-	int i, j, res = 0, rangi, rangj;
-    if(A.size() == 0) return res;
+	unordered_map<int, int> AB;
+	int i, j, res = 0;
 
 	for(i = 0; i < A.size(); i++)
-		for(j = 0; j < B.size(); j++)
-			sumAB.push_back(A[i]+B[j]);
-    sort(sumAB.begin(), sumAB.end());
-    rangi = -1*sumAB.back();
-    rangj = -1*sumAB.front();
+			for(j = 0; j < B.size(); j++)
+			AB[A[i]+B[j]]++;
 
-	for(i = 0; i < C.size(); i++)
-		for(j = 0; j < D.size(); j++)
-    {
-            int res = C[i]+D[j];
-			if(res >= rangi && res <= rangj) sumCD.push_back(res);
-    }
-    sort(sumCD.begin(), sumCD.end());
-    
-    for(i = 0; i < sumAB.size(); i++)
-	{
-        int delp, target;
-		target =  (-1)*sumAB[i];
-		delp = sumCD.size();
-		for(j = (delp-1); j >=0; j--)
-		{
-			if(sumCD[j] > target) delp--;
-			if(sumCD[j] == target) res++;
-			if(sumCD[j] < target) break;
+	for(i = 0; i < C.size(); i++){
+		for(j = 0; j < D.size(); j++){
+			unordered_map<int, int>::iterator it = AB.find(0-C[i]-D[j]);
+			if(it != AB.end()) res += it->second;
 		}
-		sumCD.erase(sumCD.begin()+delp, sumCD.end()); 
 	}
+
 	return res;
 }
 
+/* non-letcode, sum of the tree for all int value from root->leaf. */
+typedef pair<TreeNode *, int> PT;
+
+int sumNumbers(TreeNode *root) {
+	stack<PT> st;
+	st.push(make_pair(root,0));
+	unsigned int val = 0, sum = 0;
+	while(!st.empty())
+	{
+		PT p =  st.top();
+		val =  p.first->val + p.second*10;
+		st.pop();
+
+		if(p.first->left == NULL && p.first->right == NULL)
+		{
+			sum += val;
+			continue;
+		}
+
+		if(p.first->right) st.push(make_pair(p.first->right, val));
+		if(p.first->left) st.push(make_pair(p.first->left, val));
+	}
+
+	return sum;
+}
+
+/* non-letcode, list all combination for k numbers in [1-> n]. */
+vector<vector<int>> combine(int n, int k) {
+	vector<vector<int>> res;
+	vector<int> zero(1,0);
+	
+	for(int i = 1; i <= n; i++)
+	{
+		vector<int> p;
+		p.push_back(i);
+		res.push_back(p);
+	}
+
+	for(int j = 2; j <=k; j++)
+	{
+		int r, res_size =  res.size();
+		for(r = 0; r < res_size; r++)
+		{
+			vector<int> p = res.front();
+			for(int start_i = (p.back()+1); start_i <= n; start_i++)
+			{
+				vector<int> new_res = p;
+				new_res.push_back(start_i);
+				res.push_back(new_res);
+			}
+			res.erase(res.begin());
+		}
+	}
+
+	return res;
+}
+
+/* 890. Find and Replace Pattern */
+vector<int> wordPattern(string word)
+{
+	    vector<int> PAT;
+		string map = "";
+
+		for(int i = 0; i < word.size(); i++)
+		{
+			if(map.find(word[i]) == string::npos) map += word[i];
+		}
+		for(int i = 0; i < word.size(); i++)
+		{
+			PAT.push_back(map.find(word[i]));
+		}
+
+		return PAT;
+}
+
+vector<string> findAndReplacePattern(vector<string>& words, string pattern) {
+        vector<int> PAT;
+		vector<string> res;
+
+		PAT = wordPattern(pattern);
+
+		for(int i = 0; i < words.size(); i++)
+		{
+			vector<int> PATp = wordPattern(words[i]);
+			if(PAT == PATp) res.push_back(words[i]);
+		}
+
+		return res;
+}
+
+bool Find(int target, vector<vector<int> > array) {
+        bool ret = false;
+		int rows, cols;
+        rows = array.size();
+        if(rows == 0) return ret;
+        cols = array[0].size();
+        if(cols == 0 || target > array[rows-1][cols-1] || target < array[0][0]) return ret;
+        
+        for(int i = 0; i < rows; i++)
+        {
+            if(target >= array[i][0] && target <= array[i][cols-1]){
+                int  mid, li, ri;
+                li = 0;
+                ri = cols-1;
+                mid = (li+ri)/2;
+                while(li <= ri){
+                    if(target > array[i][mid]) li = mid+1;
+                    else if(target < array[i][mid]) ri = mid-1;
+                    else return true;
+                    mid = (li+ri)/2;
+                }
+            }
+        }
+        return ret;
+}
+
+
+TreeNode* reConstructBinaryTree(vector<int> pre,vector<int> vin) {
+		if(pre.size() == 0 || vin.size() == 0)
+			return NULL;
+
+        TreeNode *root = new TreeNode(pre[0]);
+		int root_idx = -1;
+		for(int i = 0; i < vin.size(); i++)
+		{
+			if(vin[i] ==  pre[0]){
+				root_idx = i; break;
+			}
+		}
+        
+		/* sub vin left tree */
+		vector<int> vin_left;
+		for(int i = 0; i < root_idx; i++)
+		{
+			vin_left.push_back(vin[i]);
+		}
+		/* sub vin right tree */
+		vector<int> vin_right;
+		for(int i = root_idx+1; i < vin.size(); i++)
+			vin_right.push_back(vin[i]);
+
+		/* Pre left vector */
+		vector<int> pre_left;
+		for(int i = 1; i <= root_idx; i++)
+		{
+			pre_left.push_back(pre[i]);
+		}
+
+		/* Pre right vector */
+		vector<int> pre_right;
+		for(int i = root_idx+1; i < pre.size(); i++)
+		{
+			pre_right.push_back(pre[i]);
+		}
+
+		root->left = reConstructBinaryTree(pre_left, vin_left);
+		root->right = reConstructBinaryTree(pre_right, vin_right);
+
+		return root;
+}
+
+
+class twostack_queue
+{
+public:
+    void push(int node) {
+        stack1.push(node);
+    }
+
+    int pop() {
+        while(!stack1.empty())
+        {
+            stack2.push(stack1.top());
+            stack1.pop();
+        }
+        stack2.pop();
+        while(!stack2.empty())
+        {
+            stack1.push(stack2.top());
+            stack2.pop();
+        }
+    }
+
+private:
+    stack<int> stack1;
+    stack<int> stack2;
+};
+
+int minNumberInRotateArray(vector<int> rotateArray) {
+        if(rotateArray.size() == 0) return 0;
+        int res, pre;
+        pre = rotateArray[0];
+        res = rotateArray[0];
+        for(int i = 1; i < rotateArray.size(); i++)
+        {
+            if(pre < rotateArray[i]){
+                res = rotateArray[i]; break;
+            }
+            pre = rotateArray[i];
+        }
+        
+        return res;
+}
+
+bool isSubTree(TreeNode* pRoot1, TreeNode* pRoot2)
+{
+	if(pRoot1->val != pRoot2->val) return false;
+	queue<TreeNode*> p1, p2;
+	/* BFS has sub result, for examle: [1,2,3,4,5,6]->[1,2,3]*/
+	p1.push(pRoot1);
+	p2.push(pRoot2);
+	while(true)
+	{
+		if(p2.empty()) return true;
+		if(p1.empty() && !p2.empty()) return false;
+
+		TreeNode *node_p1 = p1.front();
+		TreeNode *node_p2 = p2.front();
+		if(node_p1->val == node_p2->val)
+		{
+			p1.pop();
+			p2.pop();
+			if(node_p1->left!= NULL) p1.push(node_p1->left);
+			if(node_p1->right!= NULL)  p1.push(node_p1->right);
+			if(node_p2->left!= NULL) p2.push(node_p2->left);
+			if(node_p2->right!= NULL) p2.push(node_p2->right);
+		}
+		else
+		{
+			return false;
+		}
+	}
+}
+
+bool HasSubtree(TreeNode* pRoot1, TreeNode* pRoot2)
+{
+	if(pRoot2 == NULL) return false;
+	if(pRoot1 == NULL) return false;
+
+	return(isSubTree(pRoot1, pRoot2) || HasSubtree(pRoot1->left, pRoot2) || HasSubtree(pRoot1->right, pRoot2));
+}
+
+class Min_stack {
+public:
+    void push(int value) {
+		st.push(value);
+		min.push_back(value);
+		sort(min.begin(), min.end());
+    }
+    void pop() {
+        int val = st.top();
+		st.pop();
+		vector<int>::iterator it =  find(min.begin(), min.end(), val);
+		min.erase(it);
+    }
+    int top() {
+        return st.top();
+    }
+    int mins() {
+        return min[0];
+    }
+private:
+	stack<int> st;
+	vector<int> min;
+};
+
+vector<vector<int>> PathRes;
+void isFindPath(TreeNode* root,int expectNumber, vector<int> &res){
+	if(root->left == NULL && root->right == NULL){
+		res.push_back(root->val);
+		if(root->val == expectNumber){
+			PathRes.push_back(res);
+		}
+		return;
+	}
+
+	res.push_back(root->val);
+	if(root->left != NULL){
+		isFindPath(root->left, (expectNumber - root->val), res);
+		res.pop_back();
+	}
+	if(root->right != NULL){
+		isFindPath(root->right, (expectNumber - root->val), res);
+		res.pop_back();
+	}
+}
+
+vector<vector<int>> FindPath(TreeNode* root,int expectNumber) {
+	vector<int> res;
+	isFindPath(root, expectNumber, res);
+	return PathRes;
+}
+
+TreeNode* Convert(TreeNode* pRootOfTree)
+{
+	/* midorder for the BST */
+	if(pRootOfTree == NULL) return NULL;
+	stack<TreeNode*> st;
+	TreeNode *phead, *curp, *prep;
+
+	phead = pRootOfTree;
+	curp = pRootOfTree;
+	prep = NULL;
+	while((curp != NULL) || !st.empty())
+	{
+		while(curp != NULL)
+		{
+			st.push(curp);
+			curp =  curp->left;
+		}
+
+		if(!st.empty()){
+			curp = st.top();
+			st.pop();
+			curp->left = prep;
+			if(prep != NULL) prep->right = curp;
+			else			 phead =  curp;
+
+			prep = curp;
+			curp = curp->right;
+		}
+	}
+
+	return phead;
+}
+
+int FindGreatestSumOfSubArray(vector<int> array) {
+    int size = array.size(), maxs = INT_MIN;
+	if(size == 0) return 0;
+
+	vector<vector<int>> dp(size, vector<int>(size, 0));
+	for(int i = 0; i < size; i++)
+	{
+		dp[i][i] = array[i];
+		if(dp[i][i] > maxs) maxs = dp[i][i];
+	}
+
+	for(int i = 0; i < size; i++)
+	{
+		for(int j = i+1; j < size; j++)
+		{
+			dp[i][j] = dp[i][j-1] + array[j];
+			if(dp[i][j] > maxs) maxs = dp[i][j];
+		}
+	}
+
+	return maxs;
+}
+
+vector<int> printMatrix(vector<vector<int> > matrix) {
+        int row = matrix.size();
+        int col = matrix[0].size();
+        vector<int> res;
+        vector<vector<int>> pre_m = matrix;
+		vector<vector<int>> new_m = matrix;
+        
+        while(row != 0 && col != 0)
+        {
+            for(int i = 0; i < col; i++)
+                res.push_back(new_m[0][i]);
+            
+            /* Reverse the remain vectors in mirror */
+			new_m.clear();
+			for(int i = 0; i < col; i++)
+			{
+				vector<int> temp;
+				for(int j = 1; j < row; j++)
+				{
+					temp.push_back(pre_m[j][i]);
+				}
+				new_m.insert(new_m.begin(), temp);
+			}
+			row = col;
+			col = row - 1;
+			pre_m = new_m;
+        }
+
+		return res;
+}
+
+TreeNode* KthNode(TreeNode* pRoot, int k)
+{
+	stack<TreeNode*> st;
+	TreeNode *pNode = pRoot;
+
+	while(pNode != NULL || !st.empty())
+	{
+		if(pNode != NULL){
+			st.push(pNode);
+			pNode = pNode->left;
+		}
+		else{
+			pNode = st.top();
+			st.pop();
+			cout << pNode->val << endl;
+			k--;
+			if(k == 0) return pNode;
+			pNode = pNode->right;
+		}
+	}
+
+	return pNode;
+}
+
+
+void qsort(int *num, int low, int high)
+{
+	if(low >= high) return;
+	int key = num[low], keyi = low;
+	int i = low, j = high;
+	
+	while(i < j)
+	{
+		if(num[i] < num[j]){
+			j--;
+		}
+		else
+		{
+			swap(num[i],num[j]);
+			keyi = j;
+			while(i < j)
+			{
+				if(num[i] <= num[j]){
+					i++;
+				}
+				else
+				{
+					swap(num[i], num[j]);
+					keyi = i;
+					break;
+				}
+			}
+		}
+
+	}
+
+	qsort(num, low, keyi-1);
+	qsort(num, keyi+1, high);
+}
+
+int GetUglyNumber_Solution(int index) {
+	vector<int> res;
+	res.push_back(1);
+	int s1 = 0;
+	int s2 = 0;
+	int s3 = 0;
+
+	for(int i = 1; i < index; i++)
+	{
+		int ret = min(res[s1]*2, min(res[s2]*3, res[s3]*5));
+		if(res[s1]*2 == ret) s1++;
+		if(res[s2]*3 == ret) s2++;
+		if(res[s3]*5 == ret) s3++;
+		res.push_back(ret);
+	}
+
+	return res.back();
+}
+
+vector<int> maxInWindows(const vector<int>& num, unsigned int size)
+{
+        list<int> win;
+        vector<int> res;
+        int c_max = INT_MIN, i = 0;
+        if(num.size() < size) return res;
+        
+        for(; i < size; i++){
+            win.push_back(num[i]);
+            if(num[i] > c_max) c_max = num[i];
+        }
+        res.push_back(c_max);
+        
+        for(; i < num.size(); i++){
+            int front = win.front();
+            win.pop_front();
+            win.push_back(num[i]);
+            if(front == c_max){
+                c_max = INT_MIN;
+                for(list<int>::iterator it = win.begin(); it != win.end(); it++){
+                    if(*it > c_max) c_max = *it;
+                }
+            }else{
+                if(num[i] > c_max) c_max = num[i];
+            }
+            res.push_back(c_max);
+        }
+        
+        return res;
+}
+
+bool path_dfs(char* matrix, int rows, int cols, int i, int j, char *str, int idx, vector<bool> &visit)
+{
+	int result = false, pos;
+    //reach the end of str, bingo
+	if(idx == strlen(str)) return true;
+	//out of index
+	if(i < 0 || i >= rows || j < 0 || j >= cols) return false;
+	pos = i*cols + j;
+	if(pos < 0 || pos > strlen(matrix)) return false;
+
+	if((matrix[pos] == str[idx]) && (visit[pos] == false)){
+		//find 4 directions to see if any match
+		visit[pos] = true;
+		result = path_dfs(matrix, rows, cols, i-1, j, str, idx+1, visit) || 
+				 path_dfs(matrix, rows, cols, i, j-1, str, idx+1, visit) ||
+				 path_dfs(matrix, rows, cols, i, j+1, str, idx+1, visit) ||
+				 path_dfs(matrix, rows, cols, i+1, j, str, idx+1, visit);
+		visit[pos] = false;
+	}
+	return result;
+}
+
+bool hasPath(char* matrix, int rows, int cols, char* str)
+{
+        if(matrix == NULL || str == NULL) return false;
+        vector<bool> visit(strlen(matrix), false);
+        for(int i = 0; i < rows; i++){
+            for(int j = 0; j < cols; j++){
+                if(matrix[i*cols+j] == str[0]){
+					if(path_dfs(matrix, rows, cols, i, j, str, 0, visit)) return true;
+				}
+            }
+        }
+
+		return false;
+}
+
+/* 1028. Recover a Tree From Preorder Traversal */
+TreeNode *NodePreorder(string S, int depth)
+{
+	if(S.empty()) return NULL;
+
+	int index = 0, dep = 0;
+	int first_idx = std::string::npos, second_idx = std::string::npos;
+
+	while(index < S.size() && S[index] != '-') index++;
+	TreeNode *pNode = new TreeNode(stoi(S.substr(0, index)));
+
+	while(index < S.size() && S[index] == '-') {index++; dep++;}
+	if(dep == depth) first_idx = index;
+
+	if(first_idx == std::string::npos){
+		//leaf node
+		return pNode;
+	}
+
+	while(index < S.size()){
+		dep = 0;
+		while(index < S.size() && S[index] == '-') {dep++; index++;}
+		if(dep == depth) {second_idx = index; break;}
+		index++;
+	}
+
+	if(second_idx == std::string::npos){
+		//no right son
+		pNode->left = NodePreorder(S.substr(first_idx), depth+1);
+		pNode->right = NULL;
+	}
+	else{
+		//both left and right son exist
+		int l_len = second_idx - first_idx - depth; //skip the '-' prefix
+		pNode->left = NodePreorder(S.substr(first_idx, l_len), depth+1);
+		pNode->right = NodePreorder(S.substr(second_idx), depth+1);
+	}
+
+	return pNode;
+}
+
+TreeNode* recoverFromPreorder(string S) {
+	if(S.empty()) return NULL;
+	return NodePreorder(S, 1);
+}
+
+
 int main(int argc, char* argv[])
 {
-	int A[] = {-268435121,-268434818,-268435384,-268434504,-268434852,-268434847,-268434718,-268434830,-268434644,-268434843,-268435282,-268434756,-268435098,-268435361,-268434888,-268435198,-268434771,-268435001,-268435011,-268434745,-268434892,-268435442,-268434705,-268434932,-268435095,-268434829,-268435166,-268434672,-268434959,-268434886,-268435158,-268435439,-268434665,-268434561,-268435327,-268434478,-268434879,-268434902,-268435027,-268434922,-268435028,-268434950,-268435407,-268434916,-268435326,-268435048,-268435156,-268435043,-268434607,-268434738,-268434944,-268434813,-268435194,-268434793,-268435372,-268434483,-268434761,-268434571,-268434529,-268435314,-268434733,-268435218,-268434590,-268434520,-268435372,-268435180,-268435420,-268435360,-268435316,-268435455,-268434797,-268435008,-268434540,-268434816,-268434485,-268435238,-268434559,-268434589,-268435257,-268434877,-268435455,-268435128,-268435307,-268434919,-268434893,-268435239,-268434788,-268435176,-268434930,-268434582,-268434471,-268435206,-268434561,-268434880,-268435137,-268434504,-268434549,-268434825,-268434587,-268435293};
-	int B[] = {-268434497,-268435316,-268435433,-268434992,-268435391,-268434629,-268434902,-268434629,-268434895,-268434527,-268434822,-268435325,-268434634,-268434877,-268434758,-268434758,-268435109,-268435179,-268434736,-268435111,-268435243,-268435191,-268435091,-268435041,-268435231,-268434473,-268434656,-268435379,-268435127,-268434727,-268435302,-268434643,-268435101,-268434879,-268434848,-268434880,-268434817,-268434746,-268435005,-268435018,-268434535,-268435390,-268435430,-268434486,-268434497,-268434652,-268434816,-268435055,-268435296,-268435044,-268434939,-268435267,-268435283,-268434673,-268435298,-268435069,-268435041,-268434525,-268435023,-268435064,-268434969,-268434630,-268435197,-268435049,-268434496,-268434777,-268434928,-268434683,-268434923,-268434699,-268434634,-268434613,-268435438,-268435449,-268434498,-268435183,-268434577,-268434515,-268435100,-268435023,-268435214,-268435358,-268435394,-268434734,-268434636,-268435056,-268434829,-268434962,-268434673,-268434578,-268434850,-268435294,-268434752,-268435410,-268434841,-268434952,-268435111,-268434905,-268434791,-268434507};
-	int C[] = {268434624,268434831,268435028,268434547,268435027,268435453,268435101,268435378,268435107,268434991,268435147,268435379,268435435,268435439,268435003,268435440,268435454,268434786,268434521,268434678,268435125,268434685,268434482,268435042,268434486,268434521,268435003,268435086,268434786,268434762,268435384,268434577,268435199,268435020,268434709,268435006,268434820,268434830,268435208,268435448,268435274,268435438,268435082,268435140,268434465,268435324,268434645,268435032,268434567,268435057,268435161,268435246,268434515,268434880,268435432,268434905,268435135,268435436,268434923,268435110,268434607,268435286,268435281,268434717,268435367,268434894,268435280,268434880,268435181,268434971,268435316,268435021,268435208,268434589,268434811,268434774,268434843,268434762,268434650,268435068,268434731,268435192,268434596,268434549,268434535,268435372,268435361,268435224,268435033,268434807,268435003,268434647,268435051,268434464,268435326,268434991,268434571,268435192,268435435,268435181};
-	int D[] = {268434917,268435022,268435311,268434898,268435389,268435347,268434735,268435285,268434695,268434794,268435393,268435114,268435063,268434517,268434464,268434766,268435316,268434706,268434962,268435078,268434921,268435070,268434569,268434895,268435446,268435003,268435362,268435421,268435158,268435274,268435391,268435298,268435311,268435295,268435428,268435010,268434884,268435055,268434824,268434877,268434467,268435181,268434797,268435142,268434611,268434719,268435081,268434924,268435340,268434961,268435215,268434583,268435192,268435364,268434925,268435396,268434599,268435330,268435253,268435037,268434642,268435228,268435103,268434736,268435123,268435220,268435394,268435015,268434906,268434478,268434956,268434465,268434840,268434648,268434706,268435382,268435297,268434602,268435264,268435237,268434582,268434686,268434825,268435246,268435234,268435441,268435139,268435357,268434512,268435375,268434873,268435318,268434469,268434750,268435217,268434469,268434872,268435218,268435254,268434547};
-	int size = sizeof(A)/sizeof(int);
-	vector<int> A1(A, A+size);
-	vector<int> B1(B, B+size);
-	vector<int> C1(C, C+size);
-	vector<int> D1(D, D+size);
-	fourSumCount(A1, B1, C1, D1);
+	int a[] = {1,2,3,4};
+	int a1[] = {5,6,7,8};
+	int a2[] = {9,10,11,12};
+	int a3[] = {13,14,15,16};
+	vector<vector<int>> matrix;
+	vector<int> ma(a, a+4);
+	matrix.push_back(ma);
+	vector<int> ma1(a1, a1+4);
+	matrix.push_back(ma1);
+	vector<int> ma2(a2, a2+4);
+	matrix.push_back(ma2);
+	vector<int> ma3(a3, a3+4);
+	matrix.push_back(ma3);
+
+	printMatrix(matrix);
+
+	int in[] = {10, 5, 12, 4, 7};
+	TreeNode root(in[0]);
+	TreeNode root1(in[1]);
+	TreeNode root2(in[2]);
+	TreeNode root3(in[3]);
+	TreeNode root4(in[4]);
+	root.left = &root1;
+	root.right = &root2;
+	root1.left = &root3;
+	root1.right = &root4;
+	FindPath(&root, 22);
+
+	int in2[] = {3, 10, 60, 9, 10, 54, 3, 27, 126, 12, 89, 0};
+	qsort(in2, 0, 11);
+
+	int in3[] = {2,3,4,2,6,2,5,1};
+	vector<int> num(in3, in3+8);
+	maxInWindows(num, 10);
+
+	GetUglyNumber_Solution(3);
+
+	priority_queue<int, vector<int>, less<int>> pq;
+
+	string S = "1-2--3---4-5--6---7";
+	TreeNode *res  = recoverFromPreorder(S);
 
     //printf("result: %d\n",isMatch2("aasdfasdfasdfasdfas", "aasdf.*asdf.*asdf.*asdf.*s"));
 	system("pause");
